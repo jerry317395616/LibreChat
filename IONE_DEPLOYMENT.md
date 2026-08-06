@@ -17,9 +17,11 @@ I-ONE LangGraph orchestrator.
 
 1. Copy `.env.ione.example` to `.env.ione` and generate every secret independently.
 2. Keep `.env.ione` outside Git and back up the entire `runtime` directory before an update.
-3. Build and start with `docker compose -f docker-compose.ione.yml up -d --build`.
+3. Build and start with
+   `docker compose --env-file .env.ione -f docker-compose.ione.yml up -d --build`.
 4. Verify `http://10.144.133.1:3080/health` before switching the public route.
-5. Create the initial administrator with `docker compose -f docker-compose.ione.yml exec api npm run create-user`.
+5. Create the initial user with
+   `docker compose --env-file .env.ione -f docker-compose.ione.yml exec api npm run create-user`.
 
 Updates are performed by pulling `jerry317395616/LibreChat`, building a new tagged image, checking
 health, and only then replacing the running API container. MongoDB and Meilisearch data live under
