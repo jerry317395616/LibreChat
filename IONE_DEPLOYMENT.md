@@ -7,6 +7,9 @@ I-ONE LangGraph orchestrator.
 ## Runtime boundary
 
 - LibreChat owns login, browser sessions and conversation presentation.
+- Frappe issues a 60-second, single-use SSO token when an authorized user opens `/agent`.
+- LibreChat exchanges that token server-to-server, maps the Frappe user by email and creates its
+  normal session cookies. The direct `/login` page remains available for emergency access.
 - The custom endpoint calls `http://host.docker.internal:8100/v1` with a dedicated bearer token.
 - The bridge calls the existing Frappe `ione_agent.api` methods, so task audits, lead candidates and
   CRM writes continue to use Frappe permissions and persistence.
@@ -17,6 +20,8 @@ I-ONE LangGraph orchestrator.
 
 1. Copy `.env.ione.example` to `.env.ione` and generate every secret independently.
 2. Keep `.env.ione` outside Git and back up the entire `runtime` directory before an update.
+   Configure the same independent `IONE_SSO_SHARED_SECRET` in the Frappe site config and
+   LibreChat `.env.ione`; never place it in a browser URL or commit it.
 3. Build and start with
    `docker compose --env-file .env.ione -f docker-compose.ione.yml up -d --build`.
 4. Verify `http://10.144.133.1:3080/health` before switching the public route.
