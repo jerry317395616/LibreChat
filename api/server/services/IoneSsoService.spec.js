@@ -1,3 +1,5 @@
+const http = require('node:http');
+
 jest.mock(
   '@librechat/data-schemas',
   () => ({
@@ -21,15 +23,26 @@ const { exchangeFrappeToken, findOrCreateSsoUser, normalizeUsername } = require(
 
 describe('IoneSsoService', () => {
   const originalEnv = process.env;
+  let server;
 
   beforeEach(() => {
     jest.clearAllMocks();
     process.env = {
       ...originalEnv,
-      IONE_SSO_FRAPPE_URL: 'https://manager.example.com',
       IONE_SSO_SHARED_SECRET: 'a'.repeat(64),
     };
   });
+
+  afterEach(
+    () =>
+      new Promise((resolve) => {
+        if (!server) {
+          return resolve();
+        }
+        server.close(resolve);
+        server = null;
+      }),
+  );
 
   afterAll(() => {
     process.env = originalEnv;
@@ -37,22 +50,33 @@ describe('IoneSsoService', () => {
 
   test('exchanges a token without exposing it in the request URL', async () => {
     const token = 'A'.repeat(64);
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        message: { subject: 'Administrator', email: 'admin@example.com' },
-      }),
+    let captured;
+    server = http.createServer((req, res) => {
+      let body = '';
+      req.on('data', (chunk) => (body += chunk));
+      req.on('end', () => {
+        captured = { body, headers: req.headers, url: req.url };
+        res.setHeader('Content-Type', 'application/json');
+        res.end(
+          JSON.stringify({
+            message: { subject: 'Administrator', email: 'admin@example.com' },
+          }),
+        );
+      });
     });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    process.env.IONE_SSO_FRAPPE_URL = `http://127.0.0.1:${server.address().port}`;
+    process.env.IONE_SSO_FRAPPE_HOST = 'manager.example.com';
 
     await expect(exchangeFrappeToken(token)).resolves.toMatchObject({
       subject: 'Administrator',
       email: 'admin@example.com',
     });
 
-    const [url, options] = global.fetch.mock.calls[0];
-    expect(url.toString()).not.toContain(token);
-    expect(JSON.parse(options.body)).toEqual({ token });
-    expect(options.headers['X-I-ONE-SSO-Secret']).toBe('a'.repeat(64));
+    expect(captured.url).not.toContain(token);
+    expect(JSON.parse(captured.body)).toEqual({ token });
+    expect(captured.headers['x-i-one-sso-secret']).toBe('a'.repeat(64));
+    expect(captured.headers.host).toBe('manager.example.com');
   });
 
   test('reuses an existing email account and verifies it', async () => {
