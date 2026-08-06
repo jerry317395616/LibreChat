@@ -30,7 +30,7 @@ endpoints:
   custom:
     - name: 'I-ONE Agent'
       apiKey: '${IONE_AGENT_API_TOKEN}'
-      baseURL: 'http://host.docker.internal:8100/v1'
+      baseURL: 'http://10.144.133.1:8100/v1'
       headers:
         X-LibreChat-User-Id: '{{LIBRECHAT_USER_ID}}'
         X-LibreChat-Conversation-Id: '{{LIBRECHAT_BODY_CONVERSATIONID}}'

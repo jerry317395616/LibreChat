@@ -10,7 +10,7 @@ I-ONE LangGraph orchestrator.
 - Frappe issues a 60-second, single-use SSO token when an authorized user opens `/agent`.
 - LibreChat exchanges that token server-to-server, maps the Frappe user by email and creates its
   normal session cookies. The direct `/login` page remains available for emergency access.
-- The custom endpoint calls `http://host.docker.internal:8100/v1` with a dedicated bearer token.
+- The custom endpoint calls `http://10.144.133.1:8100/v1` with a dedicated bearer token.
 - The bridge calls the existing Frappe `ione_agent.api` methods, so task audits, lead candidates and
   CRM writes continue to use Frappe permissions and persistence.
 - DeepSeek remains the initial planner and final reviewer. Qwen remains the execution controller.
