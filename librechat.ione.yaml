@@ -2,7 +2,7 @@ version: 1.3.13
 cache: true
 
 interface:
-  customWelcome: '你好，我是 I-ONE Agent。请直接描述需要完成的业务目标。'
+  customWelcome: '你好，我是 I-ONE Agent。请直接告诉我你想了解或完成什么。'
   modelSelect: false
   parameters: false
   presets: false
@@ -48,7 +48,7 @@ modelSpecs:
   list:
     - name: 'ione-agent'
       label: 'I-ONE Agent'
-      description: '通过 LangGraph 调度 DeepSeek、Qwen 与 Frappe 业务工具'
+      description: '由 Codex App Server 控制并使用 DeepSeek 推理'
       default: true
       preset:
         endpoint: 'I-ONE Agent'
