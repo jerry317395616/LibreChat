@@ -1,0 +1,60 @@
+version: 1.3.13
+cache: true
+
+interface:
+  customWelcome: '你好，我是 I-ONE Agent。请直接描述需要完成的业务目标。'
+  modelSelect: false
+  parameters: false
+  presets: false
+  prompts:
+    use: false
+    create: false
+    share: false
+    public: false
+  bookmarks: true
+  multiConvo: true
+  agents:
+    use: false
+    create: false
+    share: false
+    public: false
+  marketplace:
+    use: false
+  fileSearch: false
+  fileCitations: true
+
+registration:
+  socialLogins: []
+
+endpoints:
+  custom:
+    - name: 'I-ONE Agent'
+      apiKey: '${IONE_AGENT_API_TOKEN}'
+      baseURL: 'http://host.docker.internal:8100/v1'
+      headers:
+        X-LibreChat-User-Id: '{{LIBRECHAT_USER_ID}}'
+        X-LibreChat-Conversation-Id: '{{LIBRECHAT_BODY_CONVERSATIONID}}'
+      models:
+        default: ['ione-agent']
+        fetch: true
+      titleConvo: false
+      summarize: false
+      modelDisplayLabel: 'I-ONE Agent'
+      dropParams: ['stop', 'frequency_penalty', 'presence_penalty']
+
+modelSpecs:
+  enforce: true
+  prioritize: true
+  list:
+    - name: 'ione-agent'
+      label: 'I-ONE Agent'
+      description: '通过 LangGraph 调度 DeepSeek、Qwen 与 Frappe 业务工具'
+      default: true
+      preset:
+        endpoint: 'I-ONE Agent'
+        model: 'ione-agent'
+
+fileConfig:
+  endpoints:
+    default:
+      disabled: true
