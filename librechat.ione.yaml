@@ -48,7 +48,7 @@ modelSpecs:
   list:
     - name: 'ione-agent'
       label: 'I-ONE Agent'
-      description: '由 Codex App Server 控制并使用 DeepSeek 推理'
+      description: '面向企业业务查询、分析与执行的统一智能助手'
       default: true
       preset:
         endpoint: 'I-ONE Agent'
