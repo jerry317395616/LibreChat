@@ -1573,6 +1573,10 @@ export type TStartupConfig = {
   openidLabel: string;
   openidImageUrl: string;
   openidAutoRedirect: boolean;
+  ioneSsoLoginEnabled?: boolean;
+  ioneSsoAutoRedirect?: boolean;
+  ioneSsoLoginPath?: string;
+  ioneSsoLabel?: string;
   samlLabel: string;
   samlImageUrl: string;
   /** LDAP Auth Configuration */

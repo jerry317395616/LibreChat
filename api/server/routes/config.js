@@ -32,6 +32,13 @@ const publicSharedLinksEnabled =
 
 const sharePointFilePickerEnabled = isEnabled(process.env.ENABLE_SHAREPOINT_FILEPICKER);
 const openidReuseTokens = isEnabled(process.env.OPENID_REUSE_TOKENS);
+const ioneSsoLoginEnabled =
+  !!String(process.env.IONE_SSO_PUBLIC_URL || '').trim() &&
+  String(process.env.IONE_SSO_SHARED_SECRET || '').trim().length >= 32;
+const ioneSsoAutoRedirect =
+  ioneSsoLoginEnabled &&
+  (process.env.IONE_SSO_AUTO_REDIRECT === undefined ||
+    isEnabled(process.env.IONE_SSO_AUTO_REDIRECT));
 
 /**
  * Resolve build metadata eagerly at module load so the first `/api/config`
@@ -83,6 +90,10 @@ function buildPreLoginPayload() {
     openidLabel: process.env.OPENID_BUTTON_LABEL || 'Continue with OpenID',
     openidImageUrl: process.env.OPENID_IMAGE_URL,
     openidAutoRedirect: isEnabled(process.env.OPENID_AUTO_REDIRECT),
+    ioneSsoLoginEnabled,
+    ioneSsoAutoRedirect,
+    ioneSsoLoginPath: '/api/auth/ione/start',
+    ioneSsoLabel: process.env.IONE_SSO_BUTTON_LABEL || '使用 Manager 账号登录',
     samlLoginEnabled: !isOpenIdEnabled && isSamlEnabled,
     samlLabel: process.env.SAML_BUTTON_LABEL,
     samlImageUrl: process.env.SAML_IMAGE_URL,

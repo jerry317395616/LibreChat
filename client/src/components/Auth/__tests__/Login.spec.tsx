@@ -11,7 +11,12 @@ import Login from '~/components/Auth/Login';
 
 jest.mock('librechat-data-provider/react-query');
 
-const mockStartupConfig = {
+const mockStartupConfig: {
+  isFetching: boolean;
+  isLoading: boolean;
+  isError: boolean;
+  data: Partial<TStartupConfig>;
+} = {
   isFetching: false,
   isLoading: false,
   isError: false,
@@ -152,6 +157,30 @@ test('renders login form', () => {
     'href',
     'mock-server/oauth/saml',
   );
+});
+
+test('renders the Manager account login without a local password form', () => {
+  const { getByRole, queryByLabelText } = setup({
+    useGetStartupConfigReturnValue: {
+      ...mockStartupConfig,
+      data: {
+        ...mockStartupConfig.data,
+        ioneSsoLoginEnabled: true,
+        ioneSsoAutoRedirect: false,
+        ioneSsoLoginPath: '/api/auth/ione/start',
+        ioneSsoLabel: '使用 Manager 账号登录',
+        emailLoginEnabled: false,
+        registrationEnabled: false,
+      },
+    },
+  });
+
+  expect(getByRole('link', { name: '使用 Manager 账号登录' })).toHaveAttribute(
+    'href',
+    '/api/auth/ione/start',
+  );
+  expect(queryByLabelText(/email/i)).not.toBeInTheDocument();
+  expect(queryByLabelText(/password/i)).not.toBeInTheDocument();
 });
 
 test('calls loginUser.mutate on login', async () => {

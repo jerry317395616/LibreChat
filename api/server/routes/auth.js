@@ -17,7 +17,10 @@ const {
 const { verify2FAWithTempToken } = require('~/server/controllers/auth/TwoFactorAuthController');
 const { logoutController } = require('~/server/controllers/auth/LogoutController');
 const { loginController } = require('~/server/controllers/auth/LoginController');
-const { ioneSsoController } = require('~/server/controllers/auth/IoneSsoController');
+const {
+  ioneSsoController,
+  ioneSsoStartController,
+} = require('~/server/controllers/auth/IoneSsoController');
 const { findBalanceByUser, upsertBalanceFields } = require('~/models');
 const { getAppConfig } = require('~/server/services/Config');
 const middleware = require('~/server/middleware');
@@ -52,6 +55,7 @@ router.post(
   loginController,
 );
 router.post('/refresh', refreshController);
+router.get('/ione/start', middleware.loginLimiter, ioneSsoStartController);
 router.get('/ione', middleware.loginLimiter, ioneSsoController);
 router.post('/cloudfront/refresh', middleware.requireJwtAuth, (req, res) => {
   const result = getCloudFrontAuthCookieRefreshResult(req, res);

@@ -11,6 +11,24 @@ const TOKEN_PATTERN = /^[A-Za-z0-9_-]{48,160}$/;
 const DEFAULT_TIMEOUT_MS = 15000;
 const SSO_ENDPOINT = '/api/method/ione_agent.sso.consume_login_token';
 
+const getSsoStartUrl = () => {
+  const configured = String(process.env.IONE_SSO_PUBLIC_URL || '').trim();
+  if (!configured) {
+    throw new Error('I-ONE SSO public URL is not configured');
+  }
+
+  let startUrl;
+  try {
+    startUrl = new URL(configured);
+  } catch {
+    throw new Error('I-ONE SSO public URL is invalid');
+  }
+  if (startUrl.protocol !== 'https:' || startUrl.username || startUrl.password || startUrl.hash) {
+    throw new Error('I-ONE SSO public URL is invalid');
+  }
+  return startUrl.toString();
+};
+
 const getSsoConfig = () => {
   const baseUrl = String(process.env.IONE_SSO_FRAPPE_URL || '').trim();
   const hostHeader = String(process.env.IONE_SSO_FRAPPE_HOST || '').trim();
@@ -118,14 +136,27 @@ const findOrCreateSsoUser = async (profile) => {
     throw new Error('I-ONE SSO profile is incomplete');
   }
 
-  let user = await findUser({ email });
+  let user = await findUser({ provider: 'ione', idOnTheSource: subject });
+  if (!user) {
+    user = await findUser({ email });
+  }
   if (user) {
     const updates = {};
+    if (user.provider !== 'ione') {
+      updates.provider = 'ione';
+    }
+    if (user.idOnTheSource !== subject) {
+      updates.idOnTheSource = subject;
+    }
+    if (String(user.email || '').toLowerCase() !== email) {
+      updates.email = email;
+    }
     if (!user.emailVerified) {
       updates.emailVerified = true;
     }
-    if (!user.name && profile.name) {
-      updates.name = String(profile.name).trim();
+    const profileName = String(profile.name || '').trim();
+    if (profileName && user.name !== profileName) {
+      updates.name = profileName;
     }
     if (Object.keys(updates).length > 0) {
       user = await updateUser(user._id, updates);
@@ -167,6 +198,7 @@ module.exports = {
   exchangeFrappeToken,
   findOrCreateSsoUser,
   getSsoConfig,
+  getSsoStartUrl,
   normalizeUsername,
   postJson,
 };

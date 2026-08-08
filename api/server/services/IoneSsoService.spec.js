@@ -19,7 +19,12 @@ jest.mock('~/server/services/Config', () => ({
 
 const { findUser, createUser, updateUser } = require('~/models');
 const { getAppConfig } = require('~/server/services/Config');
-const { exchangeFrappeToken, findOrCreateSsoUser, normalizeUsername } = require('./IoneSsoService');
+const {
+  exchangeFrappeToken,
+  findOrCreateSsoUser,
+  getSsoStartUrl,
+  normalizeUsername,
+} = require('./IoneSsoService');
 
 describe('IoneSsoService', () => {
   const originalEnv = process.env;
@@ -79,9 +84,31 @@ describe('IoneSsoService', () => {
     expect(captured.headers.host).toBe('manager.example.com');
   });
 
+  test('accepts only a secure browser-facing SSO URL', () => {
+    process.env.IONE_SSO_PUBLIC_URL = 'https://manager.example.com/agent';
+    expect(getSsoStartUrl()).toBe('https://manager.example.com/agent');
+
+    process.env.IONE_SSO_PUBLIC_URL = 'http://manager.example.com/agent';
+    expect(() => getSsoStartUrl()).toThrow('I-ONE SSO public URL is invalid');
+  });
+
   test('reuses an existing email account and verifies it', async () => {
-    findUser.mockResolvedValue({ _id: 'existing', emailVerified: false, name: 'Admin' });
-    updateUser.mockResolvedValue({ _id: 'existing', emailVerified: true, name: 'Admin' });
+    findUser.mockResolvedValue({
+      _id: 'existing',
+      provider: 'ione',
+      idOnTheSource: 'Administrator',
+      email: 'admin@example.com',
+      emailVerified: false,
+      name: 'Admin',
+    });
+    updateUser.mockResolvedValue({
+      _id: 'existing',
+      provider: 'ione',
+      idOnTheSource: 'Administrator',
+      email: 'admin@example.com',
+      emailVerified: true,
+      name: 'Admin',
+    });
 
     const user = await findOrCreateSsoUser({
       subject: 'Administrator',
@@ -92,6 +119,30 @@ describe('IoneSsoService', () => {
     expect(updateUser).toHaveBeenCalledWith('existing', { emailVerified: true });
     expect(createUser).not.toHaveBeenCalled();
     expect(user.emailVerified).toBe(true);
+  });
+
+  test('binds an existing local account to its Manager identity', async () => {
+    findUser.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      _id: 'existing',
+      provider: 'local',
+      email: 'user@example.com',
+      emailVerified: false,
+      name: 'Old Name',
+    });
+    updateUser.mockImplementation(async (_id, updates) => ({ _id: 'existing', ...updates }));
+
+    await findOrCreateSsoUser({
+      subject: 'user@example.com',
+      email: 'user@example.com',
+      name: 'Manager User',
+    });
+
+    expect(updateUser).toHaveBeenCalledWith('existing', {
+      provider: 'ione',
+      idOnTheSource: 'user@example.com',
+      emailVerified: true,
+      name: 'Manager User',
+    });
   });
 
   test('creates a verified SSO-only account with a hashed random password', async () => {

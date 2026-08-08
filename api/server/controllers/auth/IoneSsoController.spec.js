@@ -11,11 +11,16 @@ jest.mock('~/server/services/AuthService', () => ({
 jest.mock('~/server/services/IoneSsoService', () => ({
   exchangeFrappeToken: jest.fn(),
   findOrCreateSsoUser: jest.fn(),
+  getSsoStartUrl: jest.fn(),
 }));
 
 const { setAuthTokens } = require('~/server/services/AuthService');
-const { exchangeFrappeToken, findOrCreateSsoUser } = require('~/server/services/IoneSsoService');
-const { ioneSsoController } = require('./IoneSsoController');
+const {
+  exchangeFrappeToken,
+  findOrCreateSsoUser,
+  getSsoStartUrl,
+} = require('~/server/services/IoneSsoService');
+const { ioneSsoController, ioneSsoStartController } = require('./IoneSsoController');
 
 const response = () => ({
   set: jest.fn(),
@@ -24,6 +29,17 @@ const response = () => ({
 
 describe('ioneSsoController', () => {
   beforeEach(() => jest.clearAllMocks());
+
+  test('starts login at the configured Manager entry', () => {
+    const req = { ip: '127.0.0.1' };
+    const res = response();
+    getSsoStartUrl.mockReturnValue('https://manager.example.com/agent');
+
+    ioneSsoStartController(req, res);
+
+    expect(res.redirect).toHaveBeenCalledWith(302, 'https://manager.example.com/agent');
+    expect(res.set).toHaveBeenCalledWith('Cache-Control', 'no-store, max-age=0');
+  });
 
   test('exchanges the one-time token and creates a LibreChat session', async () => {
     const req = { query: { token: 'valid-token' }, ip: '127.0.0.1' };
@@ -42,7 +58,7 @@ describe('ioneSsoController', () => {
     expect(res.set).toHaveBeenCalledWith('Cache-Control', 'no-store, max-age=0');
   });
 
-  test('returns to local login when the exchange fails', async () => {
+  test('returns to the non-looping recovery login when the exchange fails', async () => {
     const req = { query: { token: 'expired-token' }, ip: '127.0.0.1' };
     const res = response();
     exchangeFrappeToken.mockRejectedValue(new Error('expired'));
@@ -50,6 +66,6 @@ describe('ioneSsoController', () => {
     await ioneSsoController(req, res);
 
     expect(setAuthTokens).not.toHaveBeenCalled();
-    expect(res.redirect).toHaveBeenCalledWith('/login?error=sso_failed');
+    expect(res.redirect).toHaveBeenCalledWith('/login?error=auth_failed&redirect=false');
   });
 });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ErrorTypes, registerPage } from 'librechat-data-provider';
 import { OpenIDIcon, useToastContext } from '@librechat/client';
+import { LogIn } from 'lucide-react';
 import { useOutletContext, useSearchParams, useLocation } from 'react-router-dom';
 import type { TLoginLayoutContext } from '~/common';
 import { getLoginError, persistRedirectToSession } from '~/utils';
@@ -58,42 +59,57 @@ function Login() {
     }
   }, [disableAutoRedirect, searchParams, setSearchParams]);
 
-  const shouldAutoRedirect =
+  const shouldIoneAutoRedirect =
+    startupConfig?.ioneSsoLoginEnabled === true &&
+    startupConfig?.ioneSsoAutoRedirect === true &&
+    !isAutoRedirectDisabled;
+  const shouldOpenIdAutoRedirect =
+    !shouldIoneAutoRedirect &&
     startupConfig?.openidLoginEnabled &&
     startupConfig?.openidAutoRedirect &&
     startupConfig?.serverDomain &&
     !isAutoRedirectDisabled;
 
+  const ioneSsoLoginPath = startupConfig?.ioneSsoLoginPath || '/api/auth/ione/start';
+  const ioneSsoLabel = startupConfig?.ioneSsoLabel || '使用 Manager 账号登录';
+
   useEffect(() => {
-    if (shouldAutoRedirect) {
+    if (shouldIoneAutoRedirect) {
+      window.location.replace(ioneSsoLoginPath);
+      return;
+    }
+    if (shouldOpenIdAutoRedirect) {
       console.log('Auto-redirecting to OpenID provider...');
       window.location.href = `${startupConfig.serverDomain}/oauth/openid`;
     }
-  }, [shouldAutoRedirect, startupConfig]);
+  }, [ioneSsoLoginPath, shouldIoneAutoRedirect, shouldOpenIdAutoRedirect, startupConfig]);
 
-  if (shouldAutoRedirect) {
+  if (shouldIoneAutoRedirect || shouldOpenIdAutoRedirect) {
+    const providerLabel = shouldIoneAutoRedirect ? ioneSsoLabel : startupConfig.openidLabel;
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-4">
         <p className="text-lg font-semibold">
-          {localize('com_ui_redirecting_to_provider', { 0: startupConfig.openidLabel })}
+          {localize('com_ui_redirecting_to_provider', { 0: providerLabel })}
         </p>
-        <div className="mt-4">
-          <SocialButton
-            key="openid"
-            enabled={startupConfig.openidLoginEnabled}
-            serverDomain={startupConfig.serverDomain}
-            oauthPath="openid"
-            Icon={() =>
-              startupConfig.openidImageUrl ? (
-                <img src={startupConfig.openidImageUrl} alt="OpenID Logo" className="h-5 w-5" />
-              ) : (
-                <OpenIDIcon />
-              )
-            }
-            label={startupConfig.openidLabel}
-            id="openid"
-          />
-        </div>
+        {shouldOpenIdAutoRedirect && (
+          <div className="mt-4">
+            <SocialButton
+              key="openid"
+              enabled={startupConfig.openidLoginEnabled}
+              serverDomain={startupConfig.serverDomain}
+              oauthPath="openid"
+              Icon={() =>
+                startupConfig.openidImageUrl ? (
+                  <img src={startupConfig.openidImageUrl} alt="OpenID Logo" className="h-5 w-5" />
+                ) : (
+                  <OpenIDIcon />
+                )
+              }
+              label={startupConfig.openidLabel}
+              id="openid"
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -101,6 +117,16 @@ function Login() {
   return (
     <>
       {error != null && <ErrorMessage>{localize(getLoginError(error))}</ErrorMessage>}
+      {startupConfig?.ioneSsoLoginEnabled === true && (
+        <a
+          href={ioneSsoLoginPath}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-black px-5 py-3 font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+          data-testid="ione-sso-login"
+        >
+          <LogIn className="h-5 w-5" aria-hidden="true" />
+          <span>{ioneSsoLabel}</span>
+        </a>
+      )}
       {startupConfig?.emailLoginEnabled === true && (
         <LoginForm
           onSubmit={login}
