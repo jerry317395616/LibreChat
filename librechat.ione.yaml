@@ -34,6 +34,7 @@ endpoints:
       headers:
         X-LibreChat-User-Id: '{{LIBRECHAT_USER_ID}}'
         X-LibreChat-Conversation-Id: '{{LIBRECHAT_BODY_CONVERSATIONID}}'
+        X-I-ONE-Manager-User-Email: '{{LIBRECHAT_USER_EMAIL}}'
       models:
         default: ['ione-agent']
         fetch: true
